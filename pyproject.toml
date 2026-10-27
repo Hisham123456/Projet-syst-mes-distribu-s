@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gpu-dr-project"
+version = "0.1.0"
+description = "Reproducible FDR26 CPU/GPU experiments for a four-week engineering project"
+requires-python = ">=3.10,<3.14"
+dependencies = [
+  "torch>=2.6,<3", "torchvision>=0.21,<1", "timm>=1.0,<2",
+  "numpy>=1.26,<3", "Pillow>=10,<13", "opencv-python-headless>=4.10,<5",
+  "openpyxl>=3.1,<4", "scikit-learn>=1.5,<2", "PyYAML>=6,<7",
+  "matplotlib>=3.9,<4", "psutil>=6,<8"
+]
+
+[project.optional-dependencies]
+test = ["pytest>=8,<10"]
+
+[project.scripts]
+dr = "dr_project.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["cuda: requires a CUDA device"]

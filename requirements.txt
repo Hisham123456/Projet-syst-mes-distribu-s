@@ -1,0 +1,3 @@
+# Install the torch/torchvision build appropriate for CPU or Colab first.
+# See README.md. Exact installed versions are saved with every experiment.
+-e .[test]
