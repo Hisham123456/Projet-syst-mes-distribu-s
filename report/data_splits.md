@@ -51,8 +51,7 @@ de lecture intégrale des images, de couverture et d'absence de chevauchement.
 La commande PowerShell de génération initiale est :
 
 ```powershell
-$env:PYTHONPATH = 'src'
-.venv/Scripts/python.exe -m dr_project.splits
+.venv/Scripts/python.exe -m src.data_splits
 ```
 
 Elle refuse d'écraser des partitions existantes. Pour examiner une nouvelle

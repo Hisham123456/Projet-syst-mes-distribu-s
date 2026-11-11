@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from collections import Counter
 import csv
+import hashlib
+import json
 import logging
 from pathlib import Path
 import re
@@ -10,7 +12,22 @@ import numpy as np
 import openpyxl
 from sklearn.model_selection import GroupShuffleSplit
 
-from .common import digest, read_json, write_json
+def read_json(path):
+    return json.loads(Path(path).read_text(encoding="utf-8"))
+
+
+def write_json(path, value):
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(value, ensure_ascii=False, indent=2, allow_nan=False), encoding="utf-8")
+
+
+def digest(path):
+    h = hashlib.sha256()
+    with open(path, "rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            h.update(chunk)
+    return h.hexdigest()
 
 FIELDS = ["image_path", "image_id", "label", "patient_id", "sha256", "split_group"]
 EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff"}

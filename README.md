@@ -22,8 +22,8 @@ Le chargeur du professeur recalcule ses partitions par patient. Les CSV
 précédents servent ici à préparer les fichiers et leurs grades. Le découpage
 fourni répartit 2 116 images en entraînement, 425 en validation et 458 en test.
 Il place 32 paires de fichiers identiques dans des ensembles différents, ce
-qui peut biaiser les scores. L'ancienne implémentation Zenodo est conservée dans
-`src/dr_project/` comme historique.
+qui peut biaiser les scores. Le module `src/data_splits.py` permet de recréer
+les partitions figées utilisées pour les expériences sur les doublons.
 
 ## What you will do
 

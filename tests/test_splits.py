@@ -5,8 +5,7 @@ from pathlib import Path
 import openpyxl
 from PIL import Image
 
-from dr_project.common import digest
-from dr_project.splits import create_splits, metadata_rows, read_split, validate_disjoint
+from src.data_splits import create_splits, digest, metadata_rows, read_split, validate_disjoint
 
 
 class SplitTests(unittest.TestCase):
