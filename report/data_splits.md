@@ -4,6 +4,30 @@ Ce document décrit le découpage de l'ancienne implémentation Zenodo.
 La référence CPU fournie par le professeur utilise son propre découpage
 par patient, décrit dans le README du projet.
 
+## Expérience sur les grades contradictoires
+
+Les configurations `configs/cpu-temoin.yaml` et `configs/cpu-filtre.yaml`
+lisent les CSV figés et les images originales. Les deux écartent des
+ensembles de validation et de test les fichiers dont le grade est
+contradictoire dans `audit.json`. Seule la configuration filtrée les
+écarte aussi de l'entraînement. Les deux essais utilisent tous les
+exemples d'entraînement de leur variante à chaque époque.
+
+Depuis la racine du projet, lancer les commandes suivantes dans PowerShell.
+Le nom de la configuration sert de nom d'essai dans `results/` et
+`checkpoints/`.
+
+```powershell
+.venv/Scripts/python.exe src/train.py --config configs/cpu-temoin.yaml --device cpu --monitor
+.venv/Scripts/python.exe src/train.py --config configs/cpu-filtre.yaml --device cpu --monitor
+.venv/Scripts/python.exe src/evaluate.py --config configs/cpu-temoin.yaml --device cpu
+.venv/Scripts/python.exe src/evaluate.py --config configs/cpu-filtre.yaml --device cpu
+```
+
+Comparer le F1 macro et les scores par grade dans les deux fichiers
+`metrics.json`. Le run `baseline` utilise le découpage du professeur et
+sert de référence de performance CPU.
+
 Les fichiers `data/splits/train.csv`, `val.csv` et `test.csv` constituent
 la référence commune de toutes les expériences. Ne pas recréer une partition
 pour chaque modèle ou matériel. `read_split("data/splits", "train")` (ou `val`,

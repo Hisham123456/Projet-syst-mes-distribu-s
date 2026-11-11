@@ -3,6 +3,7 @@
 The CPU reference below works as is. Assignments A3 and A5 extend it.
 """
 import os, random
+from pathlib import Path
 import numpy as np
 from PIL import Image
 import torch
@@ -137,21 +138,56 @@ def _worker_init(_):
     cv2.setNumThreads(0)
 
 
+def load_frozen_splits(data):
+    """Keep a shared, conflict-free validation and test set for both runs."""
+    from src.data_splits import read_json, read_split, validate_disjoint
+
+    directory = Path(data["frozen_splits"])
+    root = Path(data["root"])
+    audit = read_json(directory / "audit.json")
+    conflicting_ids = {
+        image["image_id"]
+        for group in audit["byte_identical_groups"] if group["conflicting_labels"]
+        for image in group["images"]
+    }
+    splits = {}
+    for name in ("train", "val", "test"):
+        rows = read_split(directory, name)
+        if name != "train" or data.get("exclude_conflicts_from_train", False):
+            rows = [row for row in rows if row["image_id"] not in conflicting_ids]
+        splits[name] = rows
+    validate_disjoint(splits)
+
+    items = {}
+    for name, rows in splits.items():
+        items[name] = []
+        for row in rows:
+            path = root / row["image_path"]
+            if not path.is_file():
+                raise FileNotFoundError(f"Missing {name} image from frozen manifest: {path}")
+            items[name].append((str(path), row["label"]))
+    return items
+
+
 def make_loaders(cfg, device="cpu", gpu_preprocess=False, which=("train", "val", "test")):
     """Build DataLoaders for the requested splits.
 
     gpu_preprocess=True: workers only decode/resize and return uint8; the
     training loop preprocesses the batch on the GPU (assignment A5).
     """
-    items = find_images(cfg["data"]["root"])
-    if not items:
-        raise FileNotFoundError(
-            f"No images found under {cfg['data']['root']}/<class>/...  "
-            "Run scripts/prepare_fdr26.py or point data.root at the dataset.")
-    splits = split_by_patient(
-        items, cfg["data"]["train_frac"], cfg["data"]["val_frac"],
-        cfg["data"].get("split_seed", cfg["seed"]))
-    nw = cfg["data"]["num_workers"]
+    data = cfg["data"]
+    frozen_splits = data.get("frozen_splits")
+    if frozen_splits:
+        splits = load_frozen_splits(data)
+    else:
+        items = find_images(data["root"])
+        if not items:
+            raise FileNotFoundError(
+                f"No images found under {data['root']}/<class>/...  "
+                "Run scripts/prepare_fdr26.py or point data.root at the dataset.")
+        splits = split_by_patient(items, data["train_frac"], data["val_frac"],
+                                  data.get("split_seed", cfg["seed"]))
+    nw = data["num_workers"]
     augment = bool(cfg["preprocess"].get("augment", False))
     loaders = {}
     for k in which:
@@ -170,6 +206,6 @@ def make_loaders(cfg, device="cpu", gpu_preprocess=False, which=("train", "val",
             batch_size=cfg["data"]["batch_size"],
             shuffle=(k == "train"),
             num_workers=nw,
-            drop_last=(k == "train"),
+            drop_last=(k == "train" and not frozen_splits),
         )
     return loaders, splits

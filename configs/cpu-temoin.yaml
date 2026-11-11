@@ -1,0 +1,21 @@
+seed: 42
+data:
+  root: data/FDR26_classification/images
+  frozen_splits: data/splits
+  exclude_conflicts_from_train: false
+  image_size: [224, 224]
+  num_classes: 5
+  batch_size: 32
+  num_workers: 2
+preprocess:
+  clahe: true
+  circular_crop: true
+  normalize: true
+  gamma: 1.0
+train:
+  model: reference_cnn
+  epochs: 5
+  lr: 0.001
+  amp: false
+  weight_decay: 0.0
+  label_smoothing: 0.0

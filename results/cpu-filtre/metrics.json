@@ -1,0 +1,97 @@
+{
+  "run": "cpu-filtre",
+  "config": "configs/cpu-filtre.yaml",
+  "checkpoint": "checkpoints\\cpu-filtre\\best.pt",
+  "device": "cpu",
+  "checkpoint_epoch": 3,
+  "val_acc": 0.34606741573033706,
+  "n_test": 434,
+  "accuracy": 0.30414746543778803,
+  "macro_precision": 0.2581591337335543,
+  "macro_recall": 0.30761575515703043,
+  "macro_f1": 0.2699586452762923,
+  "per_class": {
+    "0": {
+      "precision": 0.2471264367816092,
+      "recall": 0.5657894736842105,
+      "f1-score": 0.344,
+      "support": 76.0
+    },
+    "1": {
+      "precision": 0.3711340206185567,
+      "recall": 0.3564356435643564,
+      "f1-score": 0.36363636363636365,
+      "support": 101.0
+    },
+    "2": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
+      "support": 83.0
+    },
+    "3": {
+      "precision": 0.25,
+      "recall": 0.25,
+      "f1-score": 0.25,
+      "support": 92.0
+    },
+    "4": {
+      "precision": 0.4225352112676056,
+      "recall": 0.36585365853658536,
+      "f1-score": 0.39215686274509803,
+      "support": 82.0
+    },
+    "accuracy": 0.30414746543778803,
+    "macro avg": {
+      "precision": 0.2581591337335543,
+      "recall": 0.30761575515703043,
+      "f1-score": 0.2699586452762923,
+      "support": 434.0
+    },
+    "weighted avg": {
+      "precision": 0.26247472949728157,
+      "recall": 0.30414746543778803,
+      "f1-score": 0.27195422919901097,
+      "support": 434.0
+    }
+  },
+  "confusion_matrix": [
+    [
+      43,
+      13,
+      0,
+      14,
+      6
+    ],
+    [
+      45,
+      36,
+      0,
+      12,
+      8
+    ],
+    [
+      38,
+      15,
+      0,
+      19,
+      11
+    ],
+    [
+      39,
+      14,
+      0,
+      23,
+      16
+    ],
+    [
+      9,
+      19,
+      0,
+      24,
+      30
+    ]
+  ],
+  "inference_time_s": 30.714667199999894,
+  "inference_imgs_per_s": 14.130057056258826
+}
