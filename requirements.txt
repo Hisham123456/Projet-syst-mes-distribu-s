@@ -1,3 +1,16 @@
-# Install the torch/torchvision build appropriate for CPU or Colab first.
-# See README.md. Exact installed versions are saved with every experiment.
--e .[test]
+# GPU (NVIDIA) machines: install the CUDA build of PyTorch FIRST, otherwise pip
+# picks a CPU-only wheel on Windows:
+#   pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128
+numpy>=1.24
+opencv-python>=4.8
+torch>=2.3
+torchvision>=0.15
+Pillow>=10.0
+PyYAML>=6.0
+scikit-learn>=1.3
+pandas>=2.0
+matplotlib>=3.7
+pytest>=7.4
+psutil>=5.9          # resource monitor, environment record (Table 1)
+openpyxl>=3.1        # read FDR26 metadata .xlsx
+# Optional, only for the second filter implementation of A4.11: cupy-cuda12x, numba

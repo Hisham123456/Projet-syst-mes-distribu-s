@@ -1,5 +1,9 @@
 # Données figées pour les expériences CPU et GPU
 
+Ce document décrit le découpage de l'ancienne implémentation Zenodo.
+La référence CPU fournie par le professeur utilise son propre découpage
+par patient, décrit dans le README du projet.
+
 Les fichiers `data/splits/train.csv`, `val.csv` et `test.csv` constituent
 la référence commune de toutes les expériences. Ne pas recréer une partition
 pour chaque modèle ou matériel. `read_split("data/splits", "train")` (ou `val`,
