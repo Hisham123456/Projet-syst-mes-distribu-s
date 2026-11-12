@@ -1,0 +1,25 @@
+{
+  "total_s": 232.80725040000002,
+  "stages_s": {
+    "loading (decode+resize)": 120.58928650000001,
+    "preprocessing (total)": 8.6571534,
+    "  clahe": 5.181875300000001,
+    "  circular_crop": 1.3701883000000001,
+    "  normalize": 1.9448530000000002,
+    "forward": 43.612629500000004,
+    "backward": 55.6579819,
+    "optimizer_step": 0.31435,
+    "other": 3.975849100000005
+  },
+  "fractions": {
+    "loading (decode+resize)": 0.5179790848129016,
+    "preprocessing (total)": 0.03718592692077085,
+    "  clahe": 0.022258221301513212,
+    "  circular_crop": 0.005885505273765306,
+    "  normalize": 0.008353919376043625,
+    "forward": 0.1873336394165841,
+    "backward": 0.23907323248898266,
+    "optimizer_step": 0.001350258634384868,
+    "other": 0.017077857726376055
+  }
+}
