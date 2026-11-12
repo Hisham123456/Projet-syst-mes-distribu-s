@@ -1,0 +1,59 @@
+{
+  "config": {
+    "seed": 42,
+    "data": {
+      "root": "data/FDR26_classification/images",
+      "cache_dir": "data/cache",
+      "frozen_splits": "data/splits",
+      "exclude_conflicts_from_train": true,
+      "image_size": [
+        224,
+        224
+      ],
+      "num_classes": 5,
+      "batch_size": 32,
+      "num_workers": 2
+    },
+    "preprocess": {
+      "clahe": true,
+      "circular_crop": true,
+      "normalize": true,
+      "gamma": 1.0
+    },
+    "train": {
+      "model": "reference_cnn",
+      "epochs": 5,
+      "lr": 0.001,
+      "amp": false,
+      "weight_decay": 0.0,
+      "label_smoothing": 0.0
+    }
+  },
+  "images_measured": 64,
+  "repeats": 3,
+  "splits": {
+    "train": 1996,
+    "val": 445,
+    "test": 434
+  },
+  "cache_files_present_before": 3,
+  "cache_preparation_s": 46.13446959999965,
+  "cache_reopen_s": 3.3677568000002793,
+  "cache_bytes": 432768384,
+  "direct_loading": {
+    "mean_s": 2.369030133332975,
+    "std_s": 0.11506347919792456
+  },
+  "first_cached_read": {
+    "mean_s": 0.005718399999750545,
+    "std_s": 0.0
+  },
+  "warm_cached_read": {
+    "mean_s": 0.00197923333265256,
+    "std_s": 0.0015388767998901621
+  },
+  "loading_speedup": 1196.9433286362507,
+  "pixel_equality_checked": 64,
+  "validation_batch_equal": true,
+  "scope": "Loading only; OS page cache is not cleared. End-to-end training measured separately."
+}

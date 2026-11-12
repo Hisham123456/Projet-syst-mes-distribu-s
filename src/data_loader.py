@@ -3,6 +3,10 @@
 The CPU reference below works as is. Assignments A3 and A5 extend it.
 """
 import os, random
+import hashlib
+import json
+import tempfile
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 import numpy as np
 from PIL import Image
@@ -68,10 +72,27 @@ class DRDataset(Dataset):
     def __len__(self):
         return len(self.items)
 
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        if isinstance(self.cache, np.memmap):
+            # Windows workers reopen the file instead of receiving all its pixels.
+            state["_cache_spec"] = (str(self.cache.filename), self.cache.dtype,
+                                    self.cache.offset, self.cache.shape)
+            state["cache"] = None
+        return state
+
+    def __setstate__(self, state):
+        spec = state.pop("_cache_spec", None)
+        self.__dict__.update(state)
+        if spec is not None:
+            filename, dtype, offset, shape = spec
+            self.cache = np.memmap(filename, dtype=dtype, mode="r",
+                                   offset=offset, shape=shape)
+
     def load(self, idx):
         """Decode + resize only (the 'loading' stage). Returns HWC uint8."""
-        # TODO(A3.2): if self.cache is not None, return the cached uint8 image
-        #             (np.asarray(self.cache[idx])) instead of decoding from disk.
+        if self.cache is not None:
+            return np.asarray(self.cache[idx])
         path, _ = self.items[idx]
         with Image.open(path) as im:
             im = im.convert("RGB").resize(self.image_size, Image.Resampling.BILINEAR)
@@ -115,7 +136,7 @@ def get_preprocess_transform(cfg, augment=False):
 
 
 def build_cache(items, image_size, cache_dir, workers=8):
-    """TODO(A3.1): decode + resize every image ONCE into a uint8 array on disk.
+    """Decode and resize once into an atomically published, read-only NPY cache.
 
     Requirements:
       - return a read-only np.memmap of shape (len(items), H, W, 3), dtype uint8,
@@ -129,7 +150,53 @@ def build_cache(items, image_size, cache_dir, workers=8):
       - fill the array with a thread pool (PIL releases the GIL while decoding)
     Test: tests/test_data_pipeline.py::test_cache_matches_direct_decode
     """
-    raise NotImplementedError("TODO(A3.1): build_cache")
+    if not items or len(image_size) != 2 or min(image_size) <= 0 or workers < 1:
+        raise ValueError("Cache requires images, positive width/height and workers >= 1")
+    width, height = image_size
+    shape = (len(items), height, width, 3)
+    sources = []
+    for filename, _ in items:
+        path = Path(filename).resolve()
+        stat = path.stat()
+        sources.append((str(path), stat.st_size, stat.st_mtime_ns))
+    key = hashlib.sha256(json.dumps(
+        ["RGB-BILINEAR-v1", list(image_size), sources]
+    ).encode("utf-8")).hexdigest()
+    directory = Path(cache_dir)
+    directory.mkdir(parents=True, exist_ok=True)
+    target = directory / f"{key}.npy"
+    if not target.exists():
+        fd, temporary = tempfile.mkstemp(prefix=key + "-", suffix=".tmp", dir=directory)
+        os.close(fd)
+        array = None
+        try:
+            array = np.lib.format.open_memmap(temporary, mode="w+", dtype=np.uint8, shape=shape)
+            dataset = DRDataset(items, image_size)
+
+            def fill(index):
+                array[index] = dataset.load(index)
+
+            with ThreadPoolExecutor(max_workers=workers) as pool:
+                for _ in pool.map(fill, range(len(items))):
+                    pass
+            array.flush()
+            array._mmap.close()
+            array = None
+            try:
+                os.replace(temporary, target)
+            except PermissionError:
+                # Another builder may have published and opened the same cache on Windows.
+                if not target.exists():
+                    raise
+        finally:
+            if array is not None:
+                array._mmap.close()
+            Path(temporary).unlink(missing_ok=True)
+    cache = np.load(target, mmap_mode="r", allow_pickle=False)
+    if cache.shape != shape or cache.dtype != np.uint8:
+        cache._mmap.close()
+        raise ValueError(f"Invalid cache shape or dtype: {target}")
+    return cache
 
 
 def _worker_init(_):
@@ -193,10 +260,12 @@ def make_loaders(cfg, device="cpu", gpu_preprocess=False, which=("train", "val",
     for k in which:
         # augmentation is for the training split only
         tf = None if gpu_preprocess else get_preprocess_transform(cfg, augment and k == "train")
-        # TODO(A3.3): if cfg["data"].get("cache_dir") is set, call build_cache for
-        #             this split and pass the result to DRDataset(cache=...).
+        cache = None
+        if cfg["data"].get("cache_dir"):
+            cache = build_cache(splits[k], cfg["data"]["image_size"],
+                                cfg["data"]["cache_dir"])
         ds = DRDataset(splits[k], cfg["data"]["image_size"], transform=tf,
-                       raw_uint8=gpu_preprocess)
+                       raw_uint8=gpu_preprocess, cache=cache)
         # TODO(A5.1): add the DataLoader options that feed a GPU efficiently:
         #   pin_memory (only when device == "cuda"), persistent_workers (when nw > 0),
         #   prefetch_factor (cfg["data"].get("prefetch_factor", 2), only valid when nw > 0),

@@ -50,6 +50,46 @@ def test_cache_matches_direct_decode(tiny_dataset, tmp_path):
     assert np.array_equal(cached.load(5), ds.load(5))
 
 
+def test_cache_reuse_and_invalidation(tiny_dataset, tmp_path, monkeypatch):
+    import pickle
+    items = data_loader.find_images(str(tiny_dataset))
+    folder = str(tmp_path / "cache")
+    cache = data_loader.build_cache(items, (24, 16), folder, workers=2)
+    assert cache.shape == (24, 16, 24, 3)
+    assert not cache.flags.writeable
+    dataset = data_loader.DRDataset(items, (24, 16), cache=cache)
+    restored = pickle.loads(pickle.dumps(dataset))
+    assert isinstance(restored.cache, np.memmap)
+    np.testing.assert_array_equal(restored.load(0), dataset.load(0))
+    with monkeypatch.context() as patch:
+        def fail_decode(*args):
+            raise AssertionError("A reusable cache must avoid decoding")
+        patch.setattr(data_loader.DRDataset, "load", fail_decode)
+        reused = data_loader.build_cache(items, (24, 16), folder)
+        assert reused.filename == cache.filename
+    reordered = data_loader.build_cache(items[::-1], (24, 16), folder)
+    assert reordered.filename != cache.filename
+    np.testing.assert_array_equal(reordered[0], cache[-1])
+    resized = data_loader.build_cache(items, (12, 8), folder)
+    assert resized.filename != cache.filename
+    original_stat = os.stat(items[0][0])
+    Image.new("RGB", (40, 40), (255, 0, 0)).save(items[0][0])
+    os.utime(items[0][0], ns=(original_stat.st_atime_ns, original_stat.st_mtime_ns + 1000000000))
+    changed = data_loader.build_cache(items, (24, 16), folder)
+    assert changed.filename != cache.filename
+    np.testing.assert_array_equal(changed[0, 0, 0], [255, 0, 0])
+
+
+def test_failed_cache_is_not_published(tiny_dataset, tmp_path):
+    items = data_loader.find_images(str(tiny_dataset))
+    with open(items[0][0], "wb") as stream:
+        stream.write(b"invalid image")
+    folder = tmp_path / "cache"
+    with pytest.raises(OSError):
+        data_loader.build_cache(items, (32, 32), folder, workers=2)
+    assert list(folder.iterdir()) == []
+
+
 def test_augment_transform_changes_train_images_only():
     img = np.random.default_rng(0).uniform(0.2, 0.9, (64, 64, 3)).astype(np.float32)
     cfg = {"preprocess": {"clahe": False, "circular_crop": False, "normalize": False}}
